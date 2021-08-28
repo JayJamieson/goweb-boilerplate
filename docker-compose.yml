@@ -1,0 +1,19 @@
+version: '3.4'
+
+services:
+  api:
+    image: goweb-boilerplate
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    ports:
+      - 8080:8080
+  redis:
+    image: redis:6.2.5-alpine
+    restart: always
+  postgresql:
+    image: postgresql:13.5-alpine
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: "mysecretpassword"
+    
