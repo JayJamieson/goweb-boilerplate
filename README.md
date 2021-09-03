@@ -2,6 +2,12 @@
 
 boilerplate project Go api project
 
+## Requirements
+
+- Make
+- Go >=1.16
+- Docker
+
 ## TODO
 
 - [x] Makefile
