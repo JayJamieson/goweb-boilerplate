@@ -17,7 +17,7 @@ boilerplate project Go api project
 - [x] Makefile
 - [x] Dockerfile
 - [x] docker-compose.yml
-- [ ] update docker file with db parameters
+- [x] update docker file with db parameters
 - [ ] add minimal endpoint for health check
 - [ ] add minimal db drivers for postrgesql
 - [ ] add minimal db drivers for redis
@@ -25,4 +25,4 @@ boilerplate project Go api project
   - [ ] get/post redis
   - [ ] get/post postgresql
 - [ ] github action to build and push image to registry
-- [ ] IaC for creating aws or google or azure container instances and deploy
+- [ ] IaC for creating aws or google or azure container instances and - deploy
