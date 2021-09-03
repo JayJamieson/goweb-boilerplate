@@ -76,8 +76,9 @@ help: Makefile
 	@sed -n 's/^##//p' $< | column -t -s ':' |  sed -e 's/^/ /'
 	@echo
 
-## up: run docker-compose up -d
+## up: run docker-compose build and docker-compose up -d
 up:
+	docker-compose build
 	docker-compose up -d
 
 ## down: run docker-compose down

@@ -6,14 +6,27 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+    environment:
+      ENVIRONMENT: "local" 
+      DB_HOST: "goweb-boilerplate_postgresql_1"
+      DB_PORT: "5432"
+      DB_USER: "root"
+      DB_PASS: "mysecretpassword"
+      REDIS_HOST: "goweb-boilerplate_redis_1"
+      REDIS_PORT: "6379"
+      REDIS_PORT: "6379"
     ports:
       - 8080:8080
   redis:
     image: redis:6.2.5-alpine
     restart: always
+    ports:
+      - 8081:6379
   postgresql:
-    image: postgresql:13.5-alpine
+    image: postgres:13.4-alpine
     restart: always
+    ports:
+      - 8082:5432
     environment:
       POSTGRES_PASSWORD: "mysecretpassword"
     

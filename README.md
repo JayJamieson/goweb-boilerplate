@@ -8,6 +8,10 @@ boilerplate project Go api project
 - Go >=1.16
 - Docker
 
+## Notes
+
+- <https://pkg.go.dev/github.com/lib/pq>
+
 ## TODO
 
 - [x] Makefile
