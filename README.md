@@ -18,7 +18,8 @@ boilerplate project Go api project
 - [x] Dockerfile
 - [x] docker-compose.yml
 - [x] update docker file with db parameters
-- [ ] add minimal endpoint for health check
+- [x] add minimal endpoint for health check
+  - [ ] move healthcheck to own file
 - [ ] add minimal db drivers for postrgesql
 - [ ] add minimal db drivers for redis
 - [ ] add minimal endpoints testing db drivers
