@@ -14,11 +14,10 @@ func main() {
 		"DB_PASS",
 		"REDIS_HOST",
 		"REDIS_PORT",
-		"REDIS_PORT",
 		"ENVIRONMENT",
 	}
 
-	fmt.Println("goweb-boilerplate starting...")
+	fmt.Println("goweb-boilerplate starting....")
 
 	if os.Getenv("ENVIRONMENT") == "local" {
 		for _, param := range environment {
@@ -32,14 +31,14 @@ func main() {
 
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		for _, param := range environment {
-			if os.Getenv(param) == "" {
+			if os.Getenv(param) == "" && os.Getenv("ENVIRONMENT") != "local" {
 				w.WriteHeader(500)
 				fmt.Fprintf(w, "\"%v\" not set", param)
 				return
 			}
 		}
 
-		fmt.Fprint(w, "Good")
+		fmt.Fprint(w, "Ok")
 	})
 
 	http.ListenAndServe(":8080", nil)

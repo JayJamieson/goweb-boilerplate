@@ -14,7 +14,6 @@ services:
       DB_PASS: "mysecretpassword"
       REDIS_HOST: "goweb-boilerplate_redis_1"
       REDIS_PORT: "6379"
-      REDIS_PORT: "6379"
     ports:
       - 8080:8080
   redis:
