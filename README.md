@@ -8,6 +8,11 @@ boilerplate project Go api project
 - Go >=1.16
 - Docker
 
+## Setup
+
+- `make up` to start redis and postgres
+- `make run` to start non container'd version of application, runs on host
+
 ## Notes
 
 - <https://pkg.go.dev/github.com/lib/pq>
