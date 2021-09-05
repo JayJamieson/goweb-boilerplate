@@ -27,3 +27,4 @@ boilerplate project Go api project
   - [ ] get/post postgresql
 - [ ] github action to build and push image to registry
 - [ ] IaC for creating aws or google or azure container instances and - deploy
+- [ ] convert makefile to bashscript, make is bad usage here
