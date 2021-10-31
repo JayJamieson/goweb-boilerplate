@@ -10,8 +10,9 @@ boilerplate project Go api project
 
 ## Setup
 
-- `make up` to start redis and postgres
-- `make run` to start non container'd version of application, runs on host
+- `docker-compose up redis postgresql` to start redis and postgres
+- `./gw run` to start non container'd version of application, runs on host.
+  - should install and compile most things
 
 ## Notes
 
@@ -32,4 +33,4 @@ boilerplate project Go api project
   - [ ] get/post postgresql
 - [ ] github action to build and push image to registry
 - [ ] IaC for creating aws or google or azure container instances and - deploy
-- [ ] convert makefile to bashscript, make is bad usage here
+- [x] convert makefile to bashscript, make is bad usage here

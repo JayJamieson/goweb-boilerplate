@@ -1,0 +1,762 @@
+#!/usr/bin/env bash
+
+# :script.bash3_bouncer
+if [[ "${BASH_VERSINFO:-0}" -lt 4 ]]; then
+  printf "bash version 4 or higher is required\n"
+  exit 1
+fi
+
+# :command.version_command
+version_command() {
+  echo "$version"
+}
+
+# :command.usage
+gw_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "gw - Start your Go Web Application/Service\n"
+    echo
+
+  else
+    printf "gw - Start your Go Web Application/Service\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  gw [command]\n"
+  printf "  gw [command] --help | -h\n"
+  printf "  gw --version | -v\n"
+  echo
+  # :command.usage_commands
+  printf "Commands:\n"
+  echo "  run     Run Go Web Application/Service (default)"
+  echo "  build   Build Go Web Application/Service"
+  echo "  test    Test Go Web Application/Service"
+  echo "  vet     Vet Go Web Application/Service"
+  echo "  fmt     Format Go Web Application/Service"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+    echo "  --version, -v"
+    printf "    Show version number\n"
+    echo
+
+    # :command.usage_environment_variables
+    printf "Environment Variables:\n"
+
+    # :environment_variable.usage
+    echo "  GW_ENV"
+    printf "    Set your environment\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+gw_run_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "gw run - Run Go Web Application/Service\n"
+    echo
+
+  else
+    printf "gw run - Run Go Web Application/Service\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  gw run [HOST] [PORT]\n"
+  printf "  gw run --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+    # :command.usage_args
+    printf "Arguments:\n"
+
+    # :argument.usage
+    echo "  HOST"
+    printf "    Host to run on\n"
+    printf "    Default: localhost\n"
+    echo
+
+    # :argument.usage
+    echo "  PORT"
+    printf "    Port to run on\n"
+    printf "    Default: 8080\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+gw_build_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "gw build - Build Go Web Application/Service\n"
+    echo
+
+  else
+    printf "gw build - Build Go Web Application/Service\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  gw build\n"
+  printf "  gw build --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+gw_test_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "gw test - Test Go Web Application/Service\n"
+    echo
+
+  else
+    printf "gw test - Test Go Web Application/Service\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  gw test\n"
+  printf "  gw test --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+gw_vet_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "gw vet - Vet Go Web Application/Service\n"
+    echo
+
+  else
+    printf "gw vet - Vet Go Web Application/Service\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  gw vet\n"
+  printf "  gw vet --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.usage
+gw_fmt_usage() {
+  if [[ -n $long_usage ]]; then
+    printf "gw fmt - Format Go Web Application/Service\n"
+    echo
+
+  else
+    printf "gw fmt - Format Go Web Application/Service\n"
+    echo
+
+  fi
+
+  printf "Usage:\n"
+  printf "  gw fmt\n"
+  printf "  gw fmt --help | -h\n"
+  echo
+
+  if [[ -n $long_usage ]]; then
+    printf "Options:\n"
+    # :command.usage_fixed_flags
+    echo "  --help, -h"
+    printf "    Show this help\n"
+    echo
+
+  fi
+}
+
+# :command.normalize_input
+normalize_input() {
+  local arg flags
+
+  while [[ $# -gt 0 ]]; do
+    arg="$1"
+    if [[ $arg =~ ^(--[a-zA-Z0-9_\-]+)=(.+)$ ]]; then
+      input+=("${BASH_REMATCH[1]}")
+      input+=("${BASH_REMATCH[2]}")
+    elif [[ $arg =~ ^(-[a-zA-Z0-9])=(.+)$ ]]; then
+      input+=("${BASH_REMATCH[1]}")
+      input+=("${BASH_REMATCH[2]}")
+    elif [[ $arg =~ ^-([a-zA-Z0-9][a-zA-Z0-9]+)$ ]]; then
+      flags="${BASH_REMATCH[1]}"
+      for (( i=0 ; i < ${#flags} ; i++ )); do
+        input+=("-${flags:i:1}")
+      done
+    else
+      input+=("$arg")
+    fi
+
+    shift
+  done
+}
+# :command.inspect_args
+inspect_args() {
+  readarray -t sorted_keys < <(printf '%s\n' "${!args[@]}" | sort)
+  if (( ${#args[@]} )); then
+    echo args:
+    for k in "${sorted_keys[@]}"; do echo "- \${args[$k]} = ${args[$k]}"; done
+  else
+    echo args: none
+  fi
+
+  if (( ${#other_args[@]} )); then
+    echo
+    echo other_args:
+    echo "- \${other_args[*]} = ${other_args[*]}"
+    for i in "${!other_args[@]}"; do
+      echo "- \${other_args[$i]} = ${other_args[$i]}"
+    done
+  fi
+}
+
+# :command.user_lib
+# :src/lib/go_clean.sh
+go_clean() {
+  echo "  >  Cleaning build cache"
+  go clean
+}
+
+# :src/lib/go_get.sh
+go_get() {
+  echo "  >  Fetching dependencies"
+  go get
+}
+
+# :src/lib/print_error.sh
+print_error() {
+  cat $STDERR | sed -e '1s/.*/\nError:\n/' | sed 's/make\[.*/ /' | sed "/^/s/^/     /" 1>&2
+}
+
+# :command.command_functions
+# :command.function
+gw_run_command() {
+  # :src/run_command.sh
+  inspect_args
+
+  go_clean
+
+  go_get
+
+  go build -o "$GOBIN/$PROJECTNAME" $GOFILES 2> $STDERR
+
+  $GOBIN/$PROJECTNAME
+}
+
+# :command.function
+gw_build_command() {
+  # :src/build_command.sh
+  inspect_args
+
+  go_clean
+
+  go_get
+
+  echo "  >  Building binary..."
+  go build -o "$GOBIN/$PROJECTNAME" $GOFILES 2> $STDERR
+
+  cat $STDERR | sed -e '1s/.*/\nError:\n/' | sed 's/make\[.*/ /' | sed "/^/s/^/     /" 1>&2
+}
+
+# :command.function
+gw_test_command() {
+  # :src/test_command.sh
+  go test ./...
+}
+
+# :command.function
+gw_vet_command() {
+  # :src/vet_command.sh
+  go vet ./...
+}
+
+# :command.function
+gw_fmt_command() {
+  # :src/fmt_command.sh
+  go fmt ./...
+}
+
+# :command.parse_requirements
+parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+
+  --help | -h )
+    long_usage=yes
+    gw_usage
+    exit
+    ;;
+
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  # :command.command_filter
+  action=$1
+
+  case $action in
+  -* )
+    ;;
+
+  run )
+    action="run"
+    shift
+    gw_run_parse_requirements "$@"
+    shift $#
+    ;;
+
+  build )
+    action="build"
+    shift
+    gw_build_parse_requirements "$@"
+    shift $#
+    ;;
+
+  test )
+    action="test"
+    shift
+    gw_test_parse_requirements "$@"
+    shift $#
+    ;;
+
+  vet )
+    action="vet"
+    shift
+    gw_vet_parse_requirements "$@"
+    shift $#
+    ;;
+
+  fmt )
+    action="fmt"
+    shift
+    gw_fmt_parse_requirements "$@"
+    shift $#
+    ;;
+
+  # :command.command_fallback
+  "" )
+    gw_usage
+    exit 1
+    ;;
+
+  * )
+    action="run"
+    gw_run_parse_requirements "$@"
+    shift $#
+    ;;
+
+  esac
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+      ;;
+
+    esac
+  done
+  # :command.catch_all_filter
+  # :command.default_assignments
+  # :command.whitelist_filter
+}
+
+# :command.parse_requirements
+gw_run_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+
+  --help | -h )
+    long_usage=yes
+    gw_run_usage
+    exit
+    ;;
+
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  if ! [[ -x "$(command -v go)" ]]; then
+    printf "missing dependency: go\n"
+    exit 1
+  fi
+  # :command.command_filter
+  action="run"
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      if [[ ! ${args[host]} ]]; then
+        args[host]=$1
+        shift
+      elif [[ ! ${args[port]} ]]; then
+        args[port]=$1
+        shift
+      else
+        printf "invalid argument: %s\n" "$key"
+        exit 1
+      fi
+      ;;
+
+    esac
+  done
+  # :command.catch_all_filter
+  # :command.default_assignments
+  [[ -n ${args[host]} ]] || args[host]="localhost"
+  [[ -n ${args[port]} ]] || args[port]="8080"
+  # :command.whitelist_filter
+}
+
+# :command.parse_requirements
+gw_build_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+
+  --help | -h )
+    long_usage=yes
+    gw_build_usage
+    exit
+    ;;
+
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  if ! [[ -x "$(command -v go)" ]]; then
+    printf "missing dependency: go\n"
+    exit 1
+  fi
+  # :command.command_filter
+  action="build"
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+      ;;
+
+    esac
+  done
+  # :command.catch_all_filter
+  # :command.default_assignments
+  # :command.whitelist_filter
+}
+
+# :command.parse_requirements
+gw_test_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+
+  --help | -h )
+    long_usage=yes
+    gw_test_usage
+    exit
+    ;;
+
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  if ! [[ -x "$(command -v go)" ]]; then
+    printf "missing dependency: go\n"
+    exit 1
+  fi
+  # :command.command_filter
+  action="test"
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+      ;;
+
+    esac
+  done
+  # :command.catch_all_filter
+  # :command.default_assignments
+  # :command.whitelist_filter
+}
+
+# :command.parse_requirements
+gw_vet_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+
+  --help | -h )
+    long_usage=yes
+    gw_vet_usage
+    exit
+    ;;
+
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  if ! [[ -x "$(command -v go)" ]]; then
+    printf "missing dependency: go\n"
+    exit 1
+  fi
+  # :command.command_filter
+  action="vet"
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+      ;;
+
+    esac
+  done
+  # :command.catch_all_filter
+  # :command.default_assignments
+  # :command.whitelist_filter
+}
+
+# :command.parse_requirements
+gw_fmt_parse_requirements() {
+  # :command.fixed_flag_filter
+  case "$1" in
+  --version | -v )
+    version_command
+    exit
+    ;;
+
+  --help | -h )
+    long_usage=yes
+    gw_fmt_usage
+    exit
+    ;;
+
+  esac
+  # :command.environment_variables_filter
+  # :command.dependencies_filter
+  if ! [[ -x "$(command -v go)" ]]; then
+    printf "missing dependency: go\n"
+    exit 1
+  fi
+  # :command.command_filter
+  action="fmt"
+  # :command.required_args_filter
+  # :command.required_flags_filter
+  # :command.parse_requirements_while
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case "$key" in
+
+    -* )
+      printf "invalid option: %s\n" "$key"
+      exit 1
+      ;;
+
+    * )
+      # :command.parse_requirements_case
+      printf "invalid argument: %s\n" "$key"
+      exit 1
+      ;;
+
+    esac
+  done
+  # :command.catch_all_filter
+  # :command.default_assignments
+  # :command.whitelist_filter
+}
+
+# :command.initialize
+initialize() {
+  version="0.1.0"
+  long_usage=''
+  set -e
+
+  # :src/initialize.sh
+  # Code here runs inside the initialize() function
+  # Use it for anything that you need to run before any other function, like
+  # setting environment vairables:
+  # CONFIG_FILE=settings.ini
+  #
+  # Feel free to empty (but not delete) this file.
+  source .env
+  #env | grep ".*GW.*"
+
+  GOBASE=$(pwd)
+  GOPATH="$GOBASE/vendor:$GOBASE"
+  GOBIN="$GOBASE/bin"
+  GOFILES=$(ls *.go)
+
+  ADDR=8080
+  PROJECTNAME=$(basename $GOBASE)
+
+  # save errors to file for easier reading
+  STDERR="/tmp/.$PROJECTNAME-stderr.txt"
+
+  # store PID of main.go to keep track of running process
+  PID="/tmp/.$PROJECTNAME.pid"
+
+  touch $STDERR
+  rm $STDERR
+}
+
+# :command.run
+run() {
+  declare -A args
+  declare -a other_args
+  declare -a input
+  normalize_input "$@"
+  parse_requirements "${input[@]}"
+
+  if [[ $action == "run" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      gw_run_usage
+    else
+      gw_run_command
+    fi
+
+  elif [[ $action == "build" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      gw_build_usage
+    else
+      gw_build_command
+    fi
+
+  elif [[ $action == "test" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      gw_test_usage
+    else
+      gw_test_command
+    fi
+
+  elif [[ $action == "vet" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      gw_vet_usage
+    else
+      gw_vet_command
+    fi
+
+  elif [[ $action == "fmt" ]]; then
+    if [[ ${args[--help]} ]]; then
+      long_usage=yes
+      gw_fmt_usage
+    else
+      gw_fmt_command
+    fi
+
+  elif [[ $action == "root" ]]; then
+    root_command
+  fi
+}
+
+initialize
+run "$@"

@@ -8,18 +8,18 @@ import (
 
 func main() {
 	environment := []string{
-		"DB_HOST",
-		"DB_PORT",
-		"DB_USER",
-		"DB_PASS",
-		"REDIS_HOST",
-		"REDIS_PORT",
-		"ENVIRONMENT",
+		"GW_DB_HOST",
+		"GW_DB_PORT",
+		"GW_DB_USER",
+		"GW_DB_PASS",
+		"GW_REDIS_HOST",
+		"GW_REDIS_PORT",
+		"GW_ENV",
 	}
 
 	fmt.Println("goweb-boilerplate starting....")
 
-	if os.Getenv("ENVIRONMENT") == "local" {
+	if os.Getenv("GW_ENV") == "local" {
 		for _, param := range environment {
 			fmt.Printf("%v:%v\n", param, os.Getenv(param))
 		}
@@ -31,7 +31,7 @@ func main() {
 
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		for _, param := range environment {
-			if os.Getenv(param) == "" && os.Getenv("ENVIRONMENT") != "local" {
+			if os.Getenv(param) == "" && os.Getenv("GW_ENV") != "local" {
 				w.WriteHeader(500)
 				fmt.Fprintf(w, "\"%v\" not set", param)
 				return
